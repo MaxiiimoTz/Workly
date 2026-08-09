@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -14,7 +13,8 @@ builder.Services.AddCors(options =>
     {
         policy
             .WithOrigins(
-                "http://localhost:5173"
+                "http://localhost:5173",
+                "https://workly-indol-zeta.vercel.app"
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
