@@ -12,7 +12,7 @@ import {
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: ""https://workly-ilqb.onrender.com/api"",
+    baseURL: "https://workly-ilqb.onrender.com/api",
 });
 
 interface RecordItem {
