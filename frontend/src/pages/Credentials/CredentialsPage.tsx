@@ -36,7 +36,7 @@ interface Credential {
 }
 
 const api = axios.create({
-    baseURL: "http://localhost:5001/api",
+    baseURL: "https://workly-ilqb.onrender.com/api",
 });
 
 const emptyForm = {

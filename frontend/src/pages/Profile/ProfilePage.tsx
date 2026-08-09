@@ -8,7 +8,7 @@ import {
     Camera,
 } from "lucide-react";
 
-const API_URL = "http://localhost:5001/api";
+const API_URL = "https://workly-ilqb.onrender.com/api";
 
 const ProfilePage = () => {
     const [user, setUser] = useState<any>(null);
