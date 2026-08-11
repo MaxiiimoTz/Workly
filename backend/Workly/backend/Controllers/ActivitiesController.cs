@@ -16,7 +16,6 @@ public class ActivitiesController : ControllerBase
         _context = context;
     }
 
-    // GET: api/activities
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Activity>>> GetActivities()
     {
@@ -28,25 +27,39 @@ public class ActivitiesController : ControllerBase
         return Ok(activities);
     }
 
-    // GET: api/activities/date/2026-08-11
     [HttpGet("date/{date}")]
     public async Task<ActionResult<IEnumerable<Activity>>> GetByDate(
         DateTime date)
     {
+        var startDate = DateTime.SpecifyKind(
+            date.Date,
+            DateTimeKind.Utc
+        );
+
+        var endDate = startDate.AddDays(1);
+
         var activities = await _context.Activities
-            .Where(a => a.Date.Date == date.Date)
+            .Where(a =>
+                a.Date >= startDate &&
+                a.Date < endDate
+            )
             .OrderBy(a => a.CreatedAt)
             .ToListAsync();
 
         return Ok(activities);
     }
 
-    // POST: api/activities
     [HttpPost]
     public async Task<ActionResult<Activity>> Create(
         Activity activity)
     {
         activity.Id = Guid.NewGuid();
+
+        activity.Date = DateTime.SpecifyKind(
+            activity.Date.Date,
+            DateTimeKind.Utc
+        );
+
         activity.CreatedAt = DateTime.UtcNow;
 
         _context.Activities.Add(activity);
@@ -56,7 +69,6 @@ public class ActivitiesController : ControllerBase
         return Ok(activity);
     }
 
-    // PUT: api/activities/{id}
     [HttpPut("{id}")]
     public async Task<ActionResult<Activity>> Update(
         Guid id,
@@ -71,7 +83,12 @@ public class ActivitiesController : ControllerBase
         existing.Title = activity.Title;
         existing.Percentage = activity.Percentage;
         existing.Hours = activity.Hours;
-        existing.Date = activity.Date;
+
+        existing.Date = DateTime.SpecifyKind(
+            activity.Date.Date,
+            DateTimeKind.Utc
+        );
+
         existing.ParentId = activity.ParentId;
 
         await _context.SaveChangesAsync();
@@ -79,7 +96,6 @@ public class ActivitiesController : ControllerBase
         return Ok(existing);
     }
 
-    // DELETE: api/activities/{id}
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
