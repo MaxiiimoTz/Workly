@@ -2,7 +2,7 @@ import axios from "axios";
 import type { Record } from "../types/record";
 
 const api = axios.create({
-    baseURL: "https://localhost:7164/api",
+    baseURL: "https://workly-ilqb.onrender.com/api",
 });
 
 export const recordsService = {
