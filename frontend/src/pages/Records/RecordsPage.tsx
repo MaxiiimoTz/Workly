@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import {
     Pencil,
     Plus,
@@ -7,7 +8,7 @@ import {
     Search,
     FileText,
     X,
-    Eye,
+    ChevronRight,
     AlertTriangle,
     CircleCheck,
     CircleDot,
@@ -41,9 +42,23 @@ const STATUS_OPTIONS: RecordStatus[] = [
     "Archivado",
 ];
 
+const TYPE_OPTIONS = [
+    "Nota",
+    "Reunión",
+    "Observación",
+    "Credencial",
+    "Idea",
+    "Pendiente",
+    "Link",
+];
+
 const RecordsPage = () => {
     const [records, setRecords] = useState<RecordWithStatus[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // =========================================================
+    // FORMULARIO
+    // =========================================================
 
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
@@ -56,21 +71,41 @@ const RecordsPage = () => {
 
     const [showForm, setShowForm] = useState(false);
 
+    // =========================================================
+    // VER REGISTRO
+    // =========================================================
+
     const [selectedRecord, setSelectedRecord] =
         useState<RecordWithStatus | null>(null);
 
+    // =========================================================
+    // ELIMINAR
+    // =========================================================
+
     const [recordToDelete, setRecordToDelete] =
         useState<RecordWithStatus | null>(null);
+
+    // =========================================================
+    // TOAST
+    // =========================================================
 
     const [toast, setToast] = useState<{
         message: string;
         type: ToastType;
     } | null>(null);
 
+    // =========================================================
+    // FILTROS
+    // =========================================================
+
     const [search, setSearch] = useState("");
-    const [filterType, setFilterType] = useState("Todos");
+
+    const [filterType, setFilterType] =
+        useState("Todos");
+
     const [filterFavorite, setFilterFavorite] =
         useState("Todos");
+
     const [filterStatus, setFilterStatus] =
         useState("Todos");
 
@@ -97,20 +132,34 @@ const RecordsPage = () => {
     // =========================================================
 
     const loadRecords = async () => {
-        const data = await recordsService.getAll();
+        try {
+            const data = await recordsService.getAll();
 
-        setRecords(
-            data.map((record) => ({
-                ...record,
-                status:
-                    (record as RecordWithStatus).status ??
-                    "Pendiente",
-            }))
-        );
+            setRecords(
+                data.map((record) => ({
+                    ...record,
+                    status:
+                        (record as RecordWithStatus).status ??
+                        "Pendiente",
+                }))
+            );
+        } catch (error) {
+            console.error(
+                "Error cargando registros:",
+                error
+            );
+
+            showToast(
+                "No se pudieron cargar los registros.",
+                "error"
+            );
+        }
     };
 
     useEffect(() => {
-        loadRecords().finally(() => setLoading(false));
+        loadRecords().finally(() =>
+            setLoading(false)
+        );
     }, []);
 
     // =========================================================
@@ -119,10 +168,12 @@ const RecordsPage = () => {
 
     const openCreate = () => {
         setEditingId(null);
+
         setTitle("");
         setDescription("");
         setType("Nota");
         setStatus("Pendiente");
+
         setShowForm(true);
     };
 
@@ -130,18 +181,29 @@ const RecordsPage = () => {
     // EDITAR
     // =========================================================
 
-    const openEdit = (record: RecordWithStatus) => {
+    const openEdit = (
+        record: RecordWithStatus
+    ) => {
         setEditingId(record.id);
+
         setTitle(record.title);
         setDescription(record.description);
         setType(record.type);
-        setStatus(record.status ?? "Pendiente");
+        setStatus(
+            record.status ?? "Pendiente"
+        );
+
         setShowForm(true);
     };
+
+    // =========================================================
+    // CERRAR FORMULARIO
+    // =========================================================
 
     const closeForm = () => {
         setShowForm(false);
         setEditingId(null);
+
         setTitle("");
         setDescription("");
         setType("Nota");
@@ -152,7 +214,9 @@ const RecordsPage = () => {
     // VER
     // =========================================================
 
-    const openView = (record: RecordWithStatus) => {
+    const openView = (
+        record: RecordWithStatus
+    ) => {
         setSelectedRecord(record);
     };
 
@@ -161,97 +225,13 @@ const RecordsPage = () => {
     };
 
     // =========================================================
-    // FECHAS
-    // =========================================================
-
-    const formatDateTime = (date?: string | Date) => {
-        if (!date) {
-            return "Sin fecha";
-        }
-
-        const parsedDate = new Date(date);
-
-        if (Number.isNaN(parsedDate.getTime())) {
-            return "Sin fecha";
-        }
-
-        return parsedDate.toLocaleString("es-PE", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    };
-
-    const getRelativeTime = (date?: string | Date) => {
-        if (!date) {
-            return "Sin fecha";
-        }
-
-        const parsedDate = new Date(date);
-
-        if (Number.isNaN(parsedDate.getTime())) {
-            return "Sin fecha";
-        }
-
-        const difference = Date.now() - parsedDate.getTime();
-
-        if (difference < 0) {
-            return "Actualizado recientemente";
-        }
-
-        const seconds = Math.floor(difference / 1000);
-
-        if (seconds < 60) {
-            return "Actualizado hace unos segundos";
-        }
-
-        const minutes = Math.floor(seconds / 60);
-
-        if (minutes < 60) {
-            return `Actualizado hace ${minutes} ${
-                minutes === 1 ? "minuto" : "minutos"
-            }`;
-        }
-
-        const hours = Math.floor(minutes / 60);
-
-        if (hours < 24) {
-            return `Actualizado hace ${hours} ${
-                hours === 1 ? "hora" : "horas"
-            }`;
-        }
-
-        const days = Math.floor(hours / 24);
-
-        if (days < 30) {
-            return `Actualizado hace ${days} ${
-                days === 1 ? "día" : "días"
-            }`;
-        }
-
-        const months = Math.floor(days / 30);
-
-        if (months < 12) {
-            return `Actualizado hace ${months} ${
-                months === 1 ? "mes" : "meses"
-            }`;
-        }
-
-        const years = Math.floor(months / 12);
-
-        return `Actualizado hace ${years} ${
-            years === 1 ? "año" : "años"
-        }`;
-    };
-
-    // =========================================================
     // GUARDAR
     // =========================================================
 
     const saveRecord = async () => {
-        if (!title.trim()) return;
+        if (!title.trim()) {
+            return;
+        }
 
         try {
             if (editingId) {
@@ -260,13 +240,17 @@ const RecordsPage = () => {
                 );
 
                 if (record) {
-                    await recordsService.update(editingId, {
-                        ...record,
-                        title: title.trim(),
-                        description: description.trim(),
-                        type,
-                        status,
-                    } as any);
+                    await recordsService.update(
+                        editingId,
+                        {
+                            ...record,
+                            title: title.trim(),
+                            description:
+                                description.trim(),
+                            type,
+                            status,
+                        } as any
+                    );
                 }
 
                 closeForm();
@@ -279,7 +263,8 @@ const RecordsPage = () => {
             } else {
                 await recordsService.create({
                     title: title.trim(),
-                    description: description.trim(),
+                    description:
+                        description.trim(),
                     type,
                     favorite: false,
                     status,
@@ -307,7 +292,7 @@ const RecordsPage = () => {
     };
 
     // =========================================================
-    // ABRIR CONFIRMACIÓN ELIMINAR
+    // ELIMINAR - CONFIRMACIÓN
     // =========================================================
 
     const askDeleteRecord = (
@@ -325,7 +310,9 @@ const RecordsPage = () => {
     // =========================================================
 
     const deleteRecord = async () => {
-        if (!recordToDelete) return;
+        if (!recordToDelete) {
+            return;
+        }
 
         try {
             await recordsService.delete(
@@ -363,17 +350,25 @@ const RecordsPage = () => {
     // FAVORITO
     // =========================================================
 
-    const toggleFavorite = async (id: string) => {
+    const toggleFavorite = async (
+        id: string
+    ) => {
         try {
-            const currentRecord = records.find(
-                (record) => record.id === id
-            );
+            const currentRecord =
+                records.find(
+                    (record) =>
+                        record.id === id
+                );
 
-            await recordsService.toggleFavorite(id);
+            await recordsService.toggleFavorite(
+                id
+            );
 
             await loadRecords();
 
-            if (selectedRecord?.id === id) {
+            if (
+                selectedRecord?.id === id
+            ) {
                 const updated =
                     await recordsService.getAll();
 
@@ -422,40 +417,71 @@ const RecordsPage = () => {
         setFilterStatus("Todos");
     };
 
-    const filteredRecords = records.filter((record) => {
-        const text =
-            `${record.title} ${record.description} ${record.type} ${
-                record.status ?? ""
-            }`.toLowerCase();
+    // =========================================================
+    // FILTRADO
+    // =========================================================
 
-        const matchesSearch = text.includes(
-            search.toLowerCase()
-        );
+    const filteredRecords = [...records]
+        .filter((record) => {
+            const text =
+                `${record.title} ${
+                    record.description
+                } ${record.type} ${
+                    record.status ?? ""
+                }`.toLowerCase();
 
-        const matchesType =
-            filterType === "Todos" ||
-            record.type === filterType;
+            const matchesSearch =
+                text.includes(
+                    search.toLowerCase()
+                );
 
-        const matchesFavorite =
-            filterFavorite === "Todos" ||
-            (filterFavorite === "Favoritos" &&
-                record.favorite);
+            const matchesType =
+                filterType === "Todos" ||
+                record.type === filterType;
 
-        const matchesStatus =
-            filterStatus === "Todos" ||
-            record.status === filterStatus;
+            const matchesFavorite =
+                filterFavorite === "Todos" ||
+                (
+                    filterFavorite ===
+                        "Favoritos" &&
+                    record.favorite
+                );
 
-        return (
-            matchesSearch &&
-            matchesType &&
-            matchesFavorite &&
-            matchesStatus
-        );
-    });
+            const matchesStatus =
+                filterStatus === "Todos" ||
+                record.status === filterStatus;
 
-    const countByType = (typeName: string) => {
+            return (
+                matchesSearch &&
+                matchesType &&
+                matchesFavorite &&
+                matchesStatus
+            );
+        })
+        .sort((a, b) => {
+            // =====================================================
+            // FAVORITOS SIEMPRE ARRIBA
+            // =====================================================
+
+            if (
+                a.favorite !== b.favorite
+            ) {
+                return a.favorite ? -1 : 1;
+            }
+
+            return 0;
+        });
+
+    // =========================================================
+    // CONTADORES
+    // =========================================================
+
+    const countByType = (
+        typeName: string
+    ) => {
         return records.filter(
-            (record) => record.type === typeName
+            (record) =>
+                record.type === typeName
         ).length;
     };
 
@@ -464,8 +490,10 @@ const RecordsPage = () => {
     ) => {
         return records.filter(
             (record) =>
-                (record.status ?? "Pendiente") ===
-                statusName
+                (
+                    record.status ??
+                    "Pendiente"
+                ) === statusName
         ).length;
     };
 
@@ -473,66 +501,106 @@ const RecordsPage = () => {
     // ESTILOS TIPO
     // =========================================================
 
-    const getTypeStyles = (recordType: string) => {
+    const getTypeStyles = (
+        recordType: string
+    ) => {
         switch (recordType) {
             case "Credencial":
                 return {
                     bg: "bg-blue-50",
-                    border: "border-blue-100",
+                    border:
+                        "border-blue-100",
                     text: "text-blue-700",
-                    iconBg: "bg-blue-100",
-                    icon: "text-blue-600",
-                    dot: "bg-blue-500",
+                    iconBg:
+                        "bg-blue-100",
+                    icon:
+                        "text-blue-600",
+                    dot:
+                        "bg-blue-500",
+                };
+
+            case "Reunión":
+                return {
+                    bg: "bg-orange-50",
+                    border:
+                        "border-orange-200",
+                    text: "text-orange-700",
+                    iconBg:
+                        "bg-orange-100",
+                    icon:
+                        "text-orange-600",
+                    dot:
+                        "bg-orange-500",
                 };
 
             case "Pendiente":
                 return {
                     bg: "bg-amber-50",
-                    border: "border-amber-100",
+                    border:
+                        "border-amber-100",
                     text: "text-amber-700",
-                    iconBg: "bg-amber-100",
-                    icon: "text-amber-600",
-                    dot: "bg-amber-500",
+                    iconBg:
+                        "bg-amber-100",
+                    icon:
+                        "text-amber-600",
+                    dot:
+                        "bg-amber-500",
                 };
 
             case "Idea":
                 return {
                     bg: "bg-violet-50",
-                    border: "border-violet-100",
+                    border:
+                        "border-violet-100",
                     text: "text-violet-700",
-                    iconBg: "bg-violet-100",
-                    icon: "text-violet-600",
-                    dot: "bg-violet-500",
+                    iconBg:
+                        "bg-violet-100",
+                    icon:
+                        "text-violet-600",
+                    dot:
+                        "bg-violet-500",
                 };
 
             case "Link":
                 return {
                     bg: "bg-emerald-50",
-                    border: "border-emerald-100",
+                    border:
+                        "border-emerald-100",
                     text: "text-emerald-700",
-                    iconBg: "bg-emerald-100",
-                    icon: "text-emerald-600",
-                    dot: "bg-emerald-500",
+                    iconBg:
+                        "bg-emerald-100",
+                    icon:
+                        "text-emerald-600",
+                    dot:
+                        "bg-emerald-500",
                 };
 
             case "Observación":
                 return {
                     bg: "bg-sky-50",
-                    border: "border-sky-100",
+                    border:
+                        "border-sky-100",
                     text: "text-sky-700",
-                    iconBg: "bg-sky-100",
-                    icon: "text-sky-600",
-                    dot: "bg-sky-500",
+                    iconBg:
+                        "bg-sky-100",
+                    icon:
+                        "text-sky-600",
+                    dot:
+                        "bg-sky-500",
                 };
 
             default:
                 return {
                     bg: "bg-indigo-50",
-                    border: "border-indigo-100",
+                    border:
+                        "border-indigo-100",
                     text: "text-indigo-700",
-                    iconBg: "bg-indigo-100",
-                    icon: "text-indigo-600",
-                    dot: "bg-indigo-500",
+                    iconBg:
+                        "bg-indigo-100",
+                    icon:
+                        "text-indigo-600",
+                    dot:
+                        "bg-indigo-500",
                 };
         }
     };
@@ -544,85 +612,126 @@ const RecordsPage = () => {
     const getStatusStyles = (
         recordStatus?: RecordStatus
     ) => {
-        switch (recordStatus ?? "Pendiente") {
+        switch (
+            recordStatus ?? "Pendiente"
+        ) {
             case "Completado":
                 return {
                     bg: "bg-emerald-50",
-                    border: "border-emerald-200",
-                    text: "text-emerald-700",
-                    icon: "text-emerald-600",
-                    dot: "bg-emerald-500",
+                    border:
+                        "border-emerald-200",
+                    text:
+                        "text-emerald-700",
+                    icon:
+                        "text-emerald-600",
+                    dot:
+                        "bg-emerald-500",
                 };
 
             case "En progreso":
                 return {
                     bg: "bg-blue-50",
-                    border: "border-blue-200",
+                    border:
+                        "border-blue-200",
                     text: "text-blue-700",
-                    icon: "text-blue-600",
-                    dot: "bg-blue-500",
+                    icon:
+                        "text-blue-600",
+                    dot:
+                        "bg-blue-500",
                 };
 
             case "Por revisar":
                 return {
                     bg: "bg-violet-50",
-                    border: "border-violet-200",
-                    text: "text-violet-700",
-                    icon: "text-violet-600",
-                    dot: "bg-violet-500",
+                    border:
+                        "border-violet-200",
+                    text:
+                        "text-violet-700",
+                    icon:
+                        "text-violet-600",
+                    dot:
+                        "bg-violet-500",
                 };
 
             case "Archivado":
                 return {
                     bg: "bg-slate-100",
-                    border: "border-slate-200",
-                    text: "text-slate-600",
-                    icon: "text-slate-500",
-                    dot: "bg-slate-400",
+                    border:
+                        "border-slate-200",
+                    text:
+                        "text-slate-600",
+                    icon:
+                        "text-slate-500",
+                    dot:
+                        "bg-slate-400",
                 };
 
             default:
                 return {
                     bg: "bg-amber-50",
-                    border: "border-amber-200",
-                    text: "text-amber-700",
-                    icon: "text-amber-600",
-                    dot: "bg-amber-500",
+                    border:
+                        "border-amber-200",
+                    text:
+                        "text-amber-700",
+                    icon:
+                        "text-amber-600",
+                    dot:
+                        "bg-amber-500",
                 };
         }
     };
+
+    // =========================================================
+    // ICONO ESTADO
+    // =========================================================
 
     const getStatusIcon = (
         recordStatus?: RecordStatus,
         size = 14
     ) => {
-        switch (recordStatus ?? "Pendiente") {
+        switch (
+            recordStatus ?? "Pendiente"
+        ) {
             case "Completado":
                 return (
-                    <CircleCheck size={size} />
+                    <CircleCheck
+                        size={size}
+                    />
                 );
 
             case "En progreso":
                 return (
-                    <Clock3 size={size} />
+                    <Clock3
+                        size={size}
+                    />
                 );
 
             case "Por revisar":
                 return (
-                    <RotateCcw size={size} />
+                    <RotateCcw
+                        size={size}
+                    />
                 );
 
             case "Archivado":
                 return (
-                    <Archive size={size} />
+                    <Archive
+                        size={size}
+                    />
                 );
 
             default:
                 return (
-                    <CircleDot size={size} />
+                    <CircleDot
+                        size={size}
+                    />
                 );
         }
     };
+
+    // =========================================================
+    // ESTILOS FILTRO TIPO
+    // =========================================================
 
     const getTypeFilterStyles = (
         typeName: string,
@@ -635,6 +744,9 @@ const RecordsPage = () => {
         switch (typeName) {
             case "Credencial":
                 return "border-blue-200 bg-blue-50 text-blue-700";
+
+            case "Reunión":
+                return "border-orange-200 bg-orange-50 text-orange-700";
 
             case "Pendiente":
                 return "border-amber-200 bg-amber-50 text-amber-700";
@@ -664,17 +776,19 @@ const RecordsPage = () => {
         return (
             <div className="flex min-h-[70vh] items-center justify-center">
                 <div className="text-center">
-
                     <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-[3px] border-slate-200 border-t-indigo-600" />
 
                     <p className="text-sm font-medium text-slate-500">
                         Cargando registros...
                     </p>
-
                 </div>
             </div>
         );
     }
+
+    // =========================================================
+    // RETURN
+    // =========================================================
 
     return (
         <div className="relative min-h-full space-y-7">
@@ -687,7 +801,6 @@ const RecordsPage = () => {
 
             <div className="pointer-events-none absolute left-1/3 top-[28rem] h-72 w-72 rounded-full bg-violet-100/25 blur-3xl" />
 
-
             {/* =====================================================
                 ENCABEZADO
             ====================================================== */}
@@ -695,15 +808,12 @@ const RecordsPage = () => {
             <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
 
                 <div>
-
                     <div className="mb-2 flex items-center gap-2">
-
                         <span className="h-2 w-2 rounded-full bg-indigo-500" />
 
                         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
                             Workspace
                         </p>
-
                     </div>
 
                     <h1 className="text-4xl font-bold tracking-tight text-slate-900">
@@ -713,9 +823,7 @@ const RecordsPage = () => {
                     <p className="mt-2 text-sm text-slate-500">
                         Guarda y organiza tus notas e información.
                     </p>
-
                 </div>
-
 
                 <button
                     onClick={openCreate}
@@ -728,9 +836,7 @@ const RecordsPage = () => {
 
                     Nuevo registro
                 </button>
-
             </div>
-
 
             {/* =====================================================
                 FILTROS
@@ -739,6 +845,8 @@ const RecordsPage = () => {
             <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
 
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_180px]">
+
+                    {/* BUSCADOR */}
 
                     <div className="relative">
 
@@ -750,40 +858,66 @@ const RecordsPage = () => {
                         <input
                             value={search}
                             onChange={(e) =>
-                                setSearch(e.target.value)
+                                setSearch(
+                                    e.target.value
+                                )
                             }
                             placeholder="Buscar registros..."
-                            className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-11 pr-4 text-sm text-slate-700 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+                            className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-11 pr-11 text-sm text-slate-700 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                         />
 
+                        {search && (
+                            <button
+                                onClick={() =>
+                                    setSearch("")
+                                }
+                                className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                            >
+                                <X size={15} />
+                            </button>
+                        )}
                     </div>
 
+                    {/* TIPO */}
 
                     <select
                         value={filterType}
                         onChange={(e) =>
-                            setFilterType(e.target.value)
+                            setFilterType(
+                                e.target.value
+                            )
                         }
                         className="h-12 rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm font-medium text-slate-600 outline-none transition-all hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                     >
-                        <option>Todos</option>
-                        <option>Nota</option>
-                        <option>Observación</option>
-                        <option>Credencial</option>
-                        <option>Idea</option>
-                        <option>Pendiente</option>
-                        <option>Link</option>
+                        <option>
+                            Todos
+                        </option>
+
+                        {TYPE_OPTIONS.map(
+                            (typeOption) => (
+                                <option
+                                    key={typeOption}
+                                >
+                                    {typeOption}
+                                </option>
+                            )
+                        )}
                     </select>
 
+                    {/* ESTADO */}
 
                     <select
                         value={filterStatus}
                         onChange={(e) =>
-                            setFilterStatus(e.target.value)
+                            setFilterStatus(
+                                e.target.value
+                            )
                         }
                         className="h-12 rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm font-medium text-slate-600 outline-none transition-all hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                     >
-                        <option>Todos</option>
+                        <option>
+                            Todos
+                        </option>
 
                         {STATUS_OPTIONS.map(
                             (statusOption) => (
@@ -796,6 +930,7 @@ const RecordsPage = () => {
                         )}
                     </select>
 
+                    {/* FAVORITOS */}
 
                     <select
                         value={filterFavorite}
@@ -806,14 +941,16 @@ const RecordsPage = () => {
                         }
                         className="h-12 rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm font-medium text-slate-600 outline-none transition-all hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                     >
-                        <option>Todos</option>
-                        <option>Favoritos</option>
+                        <option>
+                            Todos
+                        </option>
+
+                        <option>
+                            Favoritos
+                        </option>
                     </select>
-
                 </div>
-
             </div>
-
 
             {/* =====================================================
                 FILTROS POR ESTADO
@@ -824,7 +961,6 @@ const RecordsPage = () => {
                 <div className="mb-3 flex items-center justify-between">
 
                     <div>
-
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
                             Estado
                         </p>
@@ -832,19 +968,20 @@ const RecordsPage = () => {
                         <p className="mt-1 text-xs text-slate-400">
                             Organiza lo que tienes pendiente.
                         </p>
-
                     </div>
-
                 </div>
 
                 <div className="flex flex-wrap gap-2">
 
                     <button
                         onClick={() =>
-                            setFilterStatus("Todos")
+                            setFilterStatus(
+                                "Todos"
+                            )
                         }
                         className={`rounded-full border px-4 py-2 text-xs font-semibold transition-all ${
-                            filterStatus === "Todos"
+                            filterStatus ===
+                            "Todos"
                                 ? "border-indigo-200 bg-indigo-50 text-indigo-700"
                                 : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
                         }`}
@@ -856,10 +993,8 @@ const RecordsPage = () => {
                         </span>
                     </button>
 
-
                     {STATUS_OPTIONS.map(
                         (statusOption) => {
-
                             const styles =
                                 getStatusStyles(
                                     statusOption
@@ -876,7 +1011,9 @@ const RecordsPage = () => {
 
                             return (
                                 <button
-                                    key={statusOption}
+                                    key={
+                                        statusOption
+                                    }
                                     onClick={() =>
                                         setFilterStatus(
                                             statusOption
@@ -888,7 +1025,6 @@ const RecordsPage = () => {
                                             : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
                                     }`}
                                 >
-
                                     <span
                                         className={`h-1.5 w-1.5 rounded-full ${styles.dot}`}
                                     />
@@ -898,19 +1034,15 @@ const RecordsPage = () => {
                                     <span className="opacity-60">
                                         {count}
                                     </span>
-
                                 </button>
                             );
                         }
                     )}
-
                 </div>
-
             </div>
 
-
             {/* =====================================================
-                TIPOS
+                FILTROS POR TIPO
             ====================================================== */}
 
             <div className="flex flex-wrap items-center gap-2">
@@ -931,43 +1063,41 @@ const RecordsPage = () => {
                     </span>
                 </button>
 
+                {TYPE_OPTIONS.map(
+                    (typeName) => {
+                        const count =
+                            countByType(
+                                typeName
+                            );
 
-                {[
-                    "Nota",
-                    "Observación",
-                    "Idea",
-                    "Credencial",
-                    "Pendiente",
-                    "Link",
-                ].map((typeName) => {
+                        if (count === 0) {
+                            return null;
+                        }
 
-                    const count =
-                        countByType(typeName);
+                        return (
+                            <button
+                                key={typeName}
+                                onClick={() =>
+                                    setFilterType(
+                                        typeName
+                                    )
+                                }
+                                className={`rounded-full border px-4 py-2 text-xs font-semibold transition-all ${getTypeFilterStyles(
+                                    typeName,
+                                    filterType ===
+                                        typeName
+                                )}`}
+                            >
+                                {typeName}
 
-                    if (count === 0) return null;
-
-                    return (
-                        <button
-                            key={typeName}
-                            onClick={() =>
-                                setFilterType(typeName)
-                            }
-                            className={`rounded-full border px-4 py-2 text-xs font-semibold transition-all ${getTypeFilterStyles(
-                                typeName,
-                                filterType === typeName
-                            )}`}
-                        >
-                            {typeName}
-
-                            <span className="ml-1.5 opacity-60">
-                                {count}
-                            </span>
-                        </button>
-                    );
-                })}
-
+                                <span className="ml-1.5 opacity-60">
+                                    {count}
+                                </span>
+                            </button>
+                        );
+                    }
+                )}
             </div>
-
 
             {/* =====================================================
                 CABECERA LISTA
@@ -976,46 +1106,45 @@ const RecordsPage = () => {
             <div className="flex items-center justify-between">
 
                 <div>
-
                     <h2 className="text-xl font-bold tracking-tight text-slate-900">
                         Tus registros
                     </h2>
 
                     <p className="mt-1 text-sm text-slate-500">
                         {filteredRecords.length}{" "}
-                        {filteredRecords.length === 1
+                        {filteredRecords.length ===
+                        1
                             ? "registro encontrado"
                             : "registros encontrados"}
                     </p>
-
                 </div>
 
-
                 {(search ||
-                    filterType !== "Todos" ||
-                    filterFavorite !== "Todos" ||
-                    filterStatus !== "Todos") && (
-
+                    filterType !==
+                        "Todos" ||
+                    filterFavorite !==
+                        "Todos" ||
+                    filterStatus !==
+                        "Todos") && (
                     <button
-                        onClick={clearFilters}
+                        onClick={
+                            clearFilters
+                        }
                         className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-indigo-50 hover:text-indigo-600"
                     >
                         <X size={14} />
 
                         Limpiar filtros
                     </button>
-
                 )}
-
             </div>
-
 
             {/* =====================================================
                 LISTA VACÍA
             ====================================================== */}
 
-            {filteredRecords.length === 0 ? (
-
+            {filteredRecords.length ===
+            0 ? (
                 <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-6 py-20 text-center shadow-sm">
 
                     <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-indigo-100/50 blur-3xl" />
@@ -1037,43 +1166,50 @@ const RecordsPage = () => {
 
                         <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
                             {search ||
-                            filterType !== "Todos" ||
-                            filterFavorite !== "Todos" ||
-                            filterStatus !== "Todos"
+                            filterType !==
+                                "Todos" ||
+                            filterFavorite !==
+                                "Todos" ||
+                            filterStatus !==
+                                "Todos"
                                 ? "Prueba cambiando los filtros de búsqueda."
                                 : "Crea tu primer registro para comenzar."}
                         </p>
 
-
                         {!search &&
-                            filterType === "Todos" &&
-                            filterFavorite === "Todos" &&
-                            filterStatus === "Todos" && (
+                            filterType ===
+                                "Todos" &&
+                            filterFavorite ===
+                                "Todos" &&
+                            filterStatus ===
+                                "Todos" && (
+                                <button
+                                    onClick={
+                                        openCreate
+                                    }
+                                    className="mt-6 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-200/50 transition-all hover:-translate-y-0.5 hover:bg-indigo-700"
+                                >
+                                    <Plus
+                                        size={
+                                            17
+                                        }
+                                    />
 
-                            <button
-                                onClick={openCreate}
-                                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-200/50 transition-all hover:-translate-y-0.5 hover:bg-indigo-700"
-                            >
-                                <Plus size={17} />
-
-                                Nuevo registro
-                            </button>
-
-                        )}
-
+                                    Nuevo registro
+                                </button>
+                            )}
                     </div>
-
                 </div>
-
             ) : (
-
                 /* =====================================================
                    LISTA
                 ====================================================== */
 
                 <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-                    <div className="border-b border-slate-200 bg-slate-50/70 px-6 py-4">
+                    {/* CABECERA */}
+
+                    <div className="hidden border-b border-slate-200 bg-slate-50/70 px-6 py-4 md:block">
 
                         <div className="grid grid-cols-[minmax(0,1fr)_150px_170px_210px] items-center text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
 
@@ -1094,15 +1230,12 @@ const RecordsPage = () => {
                             </span>
 
                         </div>
-
                     </div>
-
 
                     <div className="divide-y divide-slate-100">
 
                         {filteredRecords.map(
                             (record) => {
-
                                 const typeStyles =
                                     getTypeStyles(
                                         record.type
@@ -1114,16 +1247,18 @@ const RecordsPage = () => {
                                     );
 
                                 return (
-
                                     <div
-                                        key={record.id}
-                                        className="group relative grid grid-cols-[minmax(0,1fr)_150px_170px_210px] items-center gap-4 px-6 py-5 transition-all hover:bg-slate-50/70"
+                                        key={
+                                            record.id
+                                        }
+                                        className="group relative grid grid-cols-1 gap-4 px-5 py-5 transition-all hover:bg-slate-50/70 md:grid-cols-[minmax(0,1fr)_150px_170px_210px] md:items-center md:gap-4 md:px-6"
                                     >
+
+                                        {/* INDICADOR */}
 
                                         <div
                                             className={`absolute left-0 top-1/2 h-9 w-1 -translate-y-1/2 rounded-r-full opacity-0 transition-opacity group-hover:opacity-100 ${typeStyles.dot}`}
                                         />
-
 
                                         {/* REGISTRO */}
 
@@ -1132,48 +1267,31 @@ const RecordsPage = () => {
                                             <div
                                                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${typeStyles.iconBg} ring-1 ring-black/[0.03] transition-transform duration-200 group-hover:scale-105`}
                                             >
-
                                                 <FileText
-                                                    size={19}
+                                                    size={
+                                                        19
+                                                    }
                                                     className={
                                                         typeStyles.icon
                                                     }
                                                 />
-
                                             </div>
-
 
                                             <div className="min-w-0">
 
                                                 <h3 className="truncate text-sm font-bold text-slate-800">
-                                                    {record.title}
+                                                    {
+                                                        record.title
+                                                    }
                                                 </h3>
 
-                                                <p className="mt-1 truncate text-sm text-slate-400">
+                                                <p className="mt-1 line-clamp-2 text-sm text-slate-400">
                                                     {record.description ||
                                                         "Sin descripción"}
                                                 </p>
 
-                                                {/* FECHA DE ACTUALIZACIÓN */}
-
-                                                <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
-
-                                                    <Clock3
-                                                        size={12}
-                                                    />
-
-                                                    <span>
-                                                        {getRelativeTime(
-                                                            record.updatedAt
-                                                        )}
-                                                    </span>
-
-                                                </div>
-
                                             </div>
-
                                         </div>
-
 
                                         {/* TIPO */}
 
@@ -1182,17 +1300,15 @@ const RecordsPage = () => {
                                             <span
                                                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold ${typeStyles.bg} ${typeStyles.border} ${typeStyles.text}`}
                                             >
-
                                                 <span
                                                     className={`h-1.5 w-1.5 rounded-full ${typeStyles.dot}`}
                                                 />
 
-                                                {record.type}
-
+                                                {
+                                                    record.type
+                                                }
                                             </span>
-
                                         </div>
-
 
                                         {/* ESTADO */}
 
@@ -1201,7 +1317,6 @@ const RecordsPage = () => {
                                             <span
                                                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold ${statusStyles.bg} ${statusStyles.border} ${statusStyles.text}`}
                                             >
-
                                                 {getStatusIcon(
                                                     record.status,
                                                     13
@@ -1209,15 +1324,14 @@ const RecordsPage = () => {
 
                                                 {record.status ??
                                                     "Pendiente"}
-
                                             </span>
-
                                         </div>
-
 
                                         {/* ACCIONES */}
 
-                                        <div className="flex justify-end gap-2">
+                                        <div className="flex justify-start gap-2 md:justify-end">
+
+                                            {/* FAVORITO */}
 
                                             <button
                                                 onClick={() =>
@@ -1236,18 +1350,19 @@ const RecordsPage = () => {
                                                         : "border-slate-200 bg-white hover:border-amber-200 hover:bg-amber-50"
                                                 }`}
                                             >
-
                                                 <Star
-                                                    size={16}
+                                                    size={
+                                                        16
+                                                    }
                                                     className={
                                                         record.favorite
                                                             ? "fill-amber-400 text-amber-400"
                                                             : "text-slate-400"
                                                     }
                                                 />
-
                                             </button>
 
+                                            {/* VER */}
 
                                             <button
                                                 onClick={() =>
@@ -1258,11 +1373,14 @@ const RecordsPage = () => {
                                                 title="Ver registro"
                                                 className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
                                             >
-                                                <Eye
-                                                    size={16}
+                                                <ChevronRight
+                                                    size={
+                                                        16
+                                                    }
                                                 />
                                             </button>
 
+                                            {/* EDITAR */}
 
                                             <button
                                                 onClick={() =>
@@ -1274,10 +1392,13 @@ const RecordsPage = () => {
                                                 className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
                                             >
                                                 <Pencil
-                                                    size={16}
+                                                    size={
+                                                        16
+                                                    }
                                                 />
                                             </button>
 
+                                            {/* ELIMINAR */}
 
                                             <button
                                                 onClick={() =>
@@ -1289,31 +1410,25 @@ const RecordsPage = () => {
                                                 className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500"
                                             >
                                                 <Trash2
-                                                    size={16}
+                                                    size={
+                                                        16
+                                                    }
                                                 />
                                             </button>
-
                                         </div>
-
                                     </div>
-
                                 );
                             }
                         )}
-
                     </div>
-
                 </div>
-
             )}
-
 
             {/* =====================================================
                 MODAL CREAR / EDITAR
             ====================================================== */}
 
             {showForm && (
-
                 <div
                     className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[3px]"
                     onMouseDown={(e) => {
@@ -1325,18 +1440,18 @@ const RecordsPage = () => {
                         }
                     }}
                 >
-
                     <div
-                        className="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20"
+                        className="flex w-full max-w-2xl max-h-[90vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20"
                         onMouseDown={(e) =>
                             e.stopPropagation()
                         }
                     >
 
-                        <div className="h-1 bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-500" />
+                        <div className="h-1 shrink-0 bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-500" />
 
+                        {/* HEADER */}
 
-                        <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+                        <div className="flex shrink-0 items-start justify-between border-b border-slate-200 px-6 py-5">
 
                             <div>
 
@@ -1364,187 +1479,199 @@ const RecordsPage = () => {
 
                             </div>
 
-
                             <button
-                                onClick={closeForm}
+                                onClick={
+                                    closeForm
+                                }
                                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400 transition-all hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700"
                             >
                                 <X size={18} />
                             </button>
-
                         </div>
 
+                        {/* CONTENIDO */}
 
-                        <div className="space-y-5 p-6">
+                        <div className="min-h-0 flex-1 overflow-y-auto p-6">
 
-                            {/* TÍTULO */}
+                            <div className="space-y-5">
 
-                            <div>
-
-                                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
-                                    Título
-                                </label>
-
-                                <input
-                                    value={title}
-                                    onChange={(e) =>
-                                        setTitle(
-                                            e.target.value
-                                        )
-                                    }
-                                    placeholder="Ej. Reunión con el equipo"
-                                    autoFocus
-                                    className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
-                                />
-
-                            </div>
-
-
-                            {/* DESCRIPCIÓN */}
-
-                            <div>
-
-                                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
-                                    Descripción
-                                </label>
-
-                                <textarea
-                                    value={description}
-                                    onChange={(e) =>
-                                        setDescription(
-                                            e.target.value
-                                        )
-                                    }
-                                    placeholder="Escribe los detalles del registro..."
-                                    rows={4}
-                                    className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
-                                />
-
-                            </div>
-
-
-                            {/* TIPO + ESTADO */}
-
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                {/* TÍTULO */}
 
                                 <div>
 
                                     <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
-                                        Tipo de registro
+                                        Título
                                     </label>
 
-                                    <select
-                                        value={type}
-                                        onChange={(e) =>
-                                            setType(
-                                                e.target.value
+                                    <input
+                                        value={title}
+                                        onChange={(
+                                            e
+                                        ) =>
+                                            setTitle(
+                                                e
+                                                    .target
+                                                    .value
                                             )
                                         }
-                                        className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-600 outline-none transition-all hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
-                                    >
-                                        <option>
-                                            Nota
-                                        </option>
-
-                                        <option>
-                                            Observación
-                                        </option>
-
-                                        <option>
-                                            Credencial
-                                        </option>
-
-                                        <option>
-                                            Idea
-                                        </option>
-
-                                        <option>
-                                            Pendiente
-                                        </option>
-
-                                        <option>
-                                            Link
-                                        </option>
-
-                                    </select>
-
+                                        placeholder="Ej. Reunión con el equipo"
+                                        autoFocus
+                                        className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+                                    />
                                 </div>
 
+                                {/* DESCRIPCIÓN */}
 
                                 <div>
 
                                     <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
-                                        Estado
+                                        Descripción
                                     </label>
 
-                                    <select
-                                        value={status}
-                                        onChange={(e) =>
-                                            setStatus(
-                                                e.target
-                                                    .value as RecordStatus
+                                    <textarea
+                                        value={
+                                            description
+                                        }
+                                        onChange={(
+                                            e
+                                        ) =>
+                                            setDescription(
+                                                e
+                                                    .target
+                                                    .value
                                             )
                                         }
-                                        className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-600 outline-none transition-all hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
-                                    >
-                                        {STATUS_OPTIONS.map(
-                                            (
-                                                statusOption
-                                            ) => (
-                                                <option
-                                                    key={
-                                                        statusOption
-                                                    }
-                                                >
-                                                    {
-                                                        statusOption
-                                                    }
-                                                </option>
-                                            )
-                                        )}
-                                    </select>
-
+                                        placeholder="Escribe los detalles del registro..."
+                                        rows={8}
+                                        className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+                                    />
                                 </div>
 
-                            </div>
+                                {/* TIPO + ESTADO */}
 
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                                    {/* TIPO */}
+
+                                    <div>
+
+                                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                                            Tipo de registro
+                                        </label>
+
+                                        <select
+                                            value={
+                                                type
+                                            }
+                                            onChange={(
+                                                e
+                                            ) =>
+                                                setType(
+                                                    e
+                                                        .target
+                                                        .value
+                                                )
+                                            }
+                                            className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-600 outline-none transition-all hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+                                        >
+                                            {TYPE_OPTIONS.map(
+                                                (
+                                                    typeOption
+                                                ) => (
+                                                    <option
+                                                        key={
+                                                            typeOption
+                                                        }
+                                                    >
+                                                        {
+                                                            typeOption
+                                                        }
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
+                                    </div>
+
+                                    {/* ESTADO */}
+
+                                    <div>
+
+                                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                                            Estado
+                                        </label>
+
+                                        <select
+                                            value={
+                                                status
+                                            }
+                                            onChange={(
+                                                e
+                                            ) =>
+                                                setStatus(
+                                                    e
+                                                        .target
+                                                        .value as RecordStatus
+                                                )
+                                            }
+                                            className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-600 outline-none transition-all hover:border-slate-300 hover:bg-white focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+                                        >
+                                            {STATUS_OPTIONS.map(
+                                                (
+                                                    statusOption
+                                                ) => (
+                                                    <option
+                                                        key={
+                                                            statusOption
+                                                        }
+                                                    >
+                                                        {
+                                                            statusOption
+                                                        }
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
+                        {/* FOOTER */}
 
-                        <div className="flex justify-end gap-3 border-t border-slate-200 bg-slate-50/70 px-6 py-4">
+                        <div className="flex shrink-0 justify-end gap-3 border-t border-slate-200 bg-slate-50/70 px-6 py-4">
 
                             <button
-                                onClick={closeForm}
+                                onClick={
+                                    closeForm
+                                }
                                 className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50"
                             >
                                 Cancelar
                             </button>
 
                             <button
-                                onClick={saveRecord}
-                                disabled={!title.trim()}
+                                onClick={
+                                    saveRecord
+                                }
+                                disabled={
+                                    !title.trim()
+                                }
                                 className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-200/50 transition-all hover:-translate-y-0.5 hover:from-indigo-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                             >
                                 {editingId
                                     ? "Guardar cambios"
                                     : "Guardar registro"}
                             </button>
-
                         </div>
-
                     </div>
-
                 </div>
-
             )}
-
 
             {/* =====================================================
                 MODAL VER
             ====================================================== */}
 
             {selectedRecord && (
-
                 <div
                     className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[3px]"
                     onMouseDown={(e) => {
@@ -1556,15 +1683,16 @@ const RecordsPage = () => {
                         }
                     }}
                 >
-
                     <div
-                        className="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20"
+                        className="flex w-full max-w-3xl max-h-[90vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20"
                         onMouseDown={(e) =>
                             e.stopPropagation()
                         }
                     >
 
-                        <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+                        {/* HEADER */}
+
+                        <div className="flex shrink-0 items-start justify-between border-b border-slate-200 px-6 py-5">
 
                             <div className="flex min-w-0 items-center gap-4">
 
@@ -1585,12 +1713,11 @@ const RecordsPage = () => {
                                     />
                                 </div>
 
-
                                 <div className="min-w-0">
 
                                     <div className="flex flex-wrap items-center gap-2">
 
-                                        <h2 className="truncate text-xl font-bold text-slate-900">
+                                        <h2 className="break-words text-xl font-bold text-slate-900">
                                             {
                                                 selectedRecord.title
                                             }
@@ -1611,7 +1738,6 @@ const RecordsPage = () => {
                                                 ).text
                                             }`}
                                         >
-
                                             <span
                                                 className={`h-1.5 w-1.5 rounded-full ${
                                                     getTypeStyles(
@@ -1623,11 +1749,8 @@ const RecordsPage = () => {
                                             {
                                                 selectedRecord.type
                                             }
-
                                         </span>
-
                                     </div>
-
 
                                     <div className="mt-2 flex flex-wrap gap-2">
 
@@ -1657,45 +1780,48 @@ const RecordsPage = () => {
                                     <p className="mt-1 text-sm text-slate-500">
                                         Detalle del registro
                                     </p>
-
                                 </div>
-
                             </div>
 
-
                             <button
-                                onClick={closeView}
+                                onClick={
+                                    closeView
+                                }
                                 className="ml-4 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400 transition-all hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700"
                             >
                                 <X size={18} />
                             </button>
-
                         </div>
 
+                        {/* CONTENIDO CON SCROLL */}
 
-                        <div className="space-y-5 p-6">
+                        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-6">
 
                             {/* DESCRIPCIÓN */}
 
                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
 
-                                <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                                <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
                                     Descripción
                                 </p>
 
-                                <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                                    {
-                                        selectedRecord.description ||
-                                        "Sin descripción"
-                                    }
-                                </p>
+                                <div className="max-h-[48vh] overflow-y-auto rounded-lg bg-white/70 p-4">
 
+                                    <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">
+                                        {
+                                            selectedRecord.description ||
+                                            "Sin descripción"
+                                        }
+                                    </p>
+
+                                </div>
                             </div>
 
-
-                            {/* INFORMACIÓN BÁSICA */}
+                            {/* INFORMACIÓN */}
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+
+                                {/* TIPO */}
 
                                 <div className="rounded-xl border border-slate-200 bg-white p-4">
 
@@ -1708,9 +1834,9 @@ const RecordsPage = () => {
                                             selectedRecord.type
                                         }
                                     </p>
-
                                 </div>
 
+                                {/* ESTADO */}
 
                                 <div className="rounded-xl border border-slate-200 bg-white p-4">
 
@@ -1742,9 +1868,9 @@ const RecordsPage = () => {
                                         })()}
 
                                     </div>
-
                                 </div>
 
+                                {/* FAVORITO */}
 
                                 <div className="rounded-xl border border-slate-200 bg-white p-4">
 
@@ -1757,94 +1883,13 @@ const RecordsPage = () => {
                                             ? "Sí"
                                             : "No"}
                                     </p>
-
                                 </div>
-
                             </div>
-
-
-                            {/* =================================================
-                                FECHAS
-                            ================================================== */}
-
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-
-                                {/* CREADO */}
-
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-
-                                    <div className="flex items-center gap-2">
-
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                                            <Clock3 size={15} />
-                                        </div>
-
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                                            Creado
-                                        </p>
-
-                                    </div>
-
-                                    <p className="mt-3 text-sm font-semibold text-slate-800">
-                                        {formatDateTime(
-                                            selectedRecord.createdAt
-                                        )}
-                                    </p>
-
-                                </div>
-
-
-                                {/* ACTUALIZADO */}
-
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-
-                                    <div className="flex items-center gap-2">
-
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
-                                            <RotateCcw size={15} />
-                                        </div>
-
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                                            Última actualización
-                                        </p>
-
-                                    </div>
-
-                                    <p className="mt-3 text-sm font-semibold text-slate-800">
-                                        {formatDateTime(
-                                            selectedRecord.updatedAt
-                                        )}
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-                            {/* ACTIVIDAD */}
-
-                            <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3">
-
-                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-
-                                    <p className="text-xs font-semibold text-indigo-700">
-                                        Actividad del registro
-                                    </p>
-
-                                    <p className="text-xs text-indigo-600">
-                                        {getRelativeTime(
-                                            selectedRecord.updatedAt
-                                        )}
-                                    </p>
-
-                                </div>
-
-                            </div>
-
                         </div>
 
+                        {/* FOOTER */}
 
-                        <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50/70 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex shrink-0 flex-col gap-3 border-t border-slate-200 bg-slate-50/70 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
 
                             <button
                                 onClick={() =>
@@ -1858,7 +1903,6 @@ const RecordsPage = () => {
                                         : "border-slate-200 bg-white text-slate-600 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700"
                                 }`}
                             >
-
                                 <Star
                                     size={16}
                                     className={
@@ -1871,9 +1915,7 @@ const RecordsPage = () => {
                                 {selectedRecord.favorite
                                     ? "Quitar favorito"
                                     : "Agregar favorito"}
-
                             </button>
-
 
                             <div className="flex justify-end gap-3">
 
@@ -1885,19 +1927,21 @@ const RecordsPage = () => {
                                     }
                                     className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition-all hover:bg-red-100"
                                 >
-                                    <Trash2 size={16} />
+                                    <Trash2
+                                        size={16}
+                                    />
 
                                     Eliminar
                                 </button>
 
-
                                 <button
-                                    onClick={closeView}
+                                    onClick={
+                                        closeView
+                                    }
                                     className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50"
                                 >
                                     Cerrar
                                 </button>
-
 
                                 <button
                                     onClick={() => {
@@ -1909,28 +1953,23 @@ const RecordsPage = () => {
                                     }}
                                     className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-200/50 transition-all hover:-translate-y-0.5 hover:from-indigo-700 hover:to-violet-700"
                                 >
-                                    <Pencil size={16} />
+                                    <Pencil
+                                        size={16}
+                                    />
 
                                     Editar
                                 </button>
-
                             </div>
-
                         </div>
-
                     </div>
-
                 </div>
-
             )}
-
 
             {/* =====================================================
                 MODAL CONFIRMAR ELIMINACIÓN
             ====================================================== */}
 
             {recordToDelete && (
-
                 <div
                     className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-[3px]"
                     onMouseDown={(e) => {
@@ -1942,7 +1981,6 @@ const RecordsPage = () => {
                         }
                     }}
                 >
-
                     <div
                         className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20"
                         onMouseDown={(e) =>
@@ -1951,7 +1989,6 @@ const RecordsPage = () => {
                     >
 
                         <div className="h-1 bg-gradient-to-r from-red-500 to-rose-500" />
-
 
                         <div className="p-6">
 
@@ -1966,7 +2003,6 @@ const RecordsPage = () => {
 
                                 </div>
 
-
                                 <div className="min-w-0">
 
                                     <h2 className="text-lg font-bold text-slate-900">
@@ -1979,52 +2015,53 @@ const RecordsPage = () => {
                                     </p>
 
                                 </div>
-
                             </div>
-
 
                             <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
 
                                 <p className="truncate text-sm font-bold text-slate-800">
-                                    {recordToDelete.title}
+                                    {
+                                        recordToDelete.title
+                                    }
                                 </p>
 
-                                <p className="mt-1 truncate text-xs text-slate-500">
-                                    {recordToDelete.description ||
-                                        "Sin descripción"}
+                                <p className="mt-1 line-clamp-3 text-xs text-slate-500">
+                                    {
+                                        recordToDelete.description ||
+                                        "Sin descripción"
+                                    }
                                 </p>
 
                             </div>
-
                         </div>
-
 
                         <div className="flex justify-end gap-3 border-t border-slate-200 bg-slate-50/70 px-6 py-4">
 
                             <button
-                                onClick={cancelDelete}
+                                onClick={
+                                    cancelDelete
+                                }
                                 className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50"
                             >
                                 Cancelar
                             </button>
 
                             <button
-                                onClick={deleteRecord}
+                                onClick={
+                                    deleteRecord
+                                }
                                 className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-red-200 transition-all hover:bg-red-600 hover:shadow-lg"
                             >
-                                <Trash2 size={16} />
+                                <Trash2
+                                    size={16}
+                                />
 
                                 Eliminar registro
                             </button>
-
                         </div>
-
                     </div>
-
                 </div>
-
             )}
-
 
             {/* =====================================================
                 TOAST
@@ -2032,12 +2069,15 @@ const RecordsPage = () => {
 
             {toast && (
                 <Toast
-                    message={toast.message}
+                    message={
+                        toast.message
+                    }
                     type={toast.type}
-                    onClose={() => setToast(null)}
+                    onClose={() =>
+                        setToast(null)
+                    }
                 />
             )}
-
         </div>
     );
 };

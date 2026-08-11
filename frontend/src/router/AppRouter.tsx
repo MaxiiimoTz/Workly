@@ -16,16 +16,14 @@ import RecordsPage from "../pages/Records/RecordsPage";
 import CredentialsPage from "../pages/Credentials/CredentialsPage";
 import FavoritesPage from "../pages/Favorites/FavoritesPage";
 import ProfilePage from "../pages/Profile/ProfilePage";
+import ActivitiesPage from "../pages/Activities/ActivitiesPage";
 
 const AppRouter = () => {
     return (
         <BrowserRouter>
-
             <Routes>
 
-                {/* =================================================
-                    RUTAS PÚBLICAS
-                ================================================== */}
+                {/* RUTAS PÚBLICAS */}
 
                 <Route element={<PublicRoute />}>
 
@@ -36,10 +34,7 @@ const AppRouter = () => {
 
                 </Route>
 
-
-                {/* =================================================
-                    RUTAS PRIVADAS
-                ================================================== */}
+                {/* RUTAS PRIVADAS */}
 
                 <Route element={<ProtectedRoute />}>
 
@@ -66,6 +61,11 @@ const AppRouter = () => {
                         />
 
                         <Route
+                            path="/activities"
+                            element={<ActivitiesPage />}
+                        />
+
+                        <Route
                             path="/profile"
                             element={<ProfilePage />}
                         />
@@ -74,10 +74,7 @@ const AppRouter = () => {
 
                 </Route>
 
-
-                {/* =================================================
-                    RUTA PRINCIPAL
-                ================================================== */}
+                {/* RUTA PRINCIPAL */}
 
                 <Route
                     path="/"
@@ -89,10 +86,7 @@ const AppRouter = () => {
                     }
                 />
 
-
-                {/* =================================================
-                    RUTA NO ENCONTRADA
-                ================================================== */}
+                {/* RUTA NO ENCONTRADA */}
 
                 <Route
                     path="*"
@@ -105,7 +99,6 @@ const AppRouter = () => {
                 />
 
             </Routes>
-
         </BrowserRouter>
     );
 };

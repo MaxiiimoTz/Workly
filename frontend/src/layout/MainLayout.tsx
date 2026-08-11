@@ -16,6 +16,7 @@ import {
     Star,
     Menu,
     X,
+    ClipboardList,
 } from "lucide-react";
 
 const MainLayout = () => {
@@ -50,15 +51,16 @@ const MainLayout = () => {
             icon: KeyRound,
         },
         {
+            path: "/activities",
+            label: "Actividades",
+            icon: ClipboardList,
+        },
+        {
             path: "/favorites",
             label: "Favoritos",
             icon: Star,
         },
     ];
-
-    // =====================================================
-    // USUARIO Y FOTO DE PERFIL
-    // =====================================================
 
     useEffect(() => {
         const storedUser =
@@ -81,10 +83,6 @@ const MainLayout = () => {
             setProfileImage(savedImage);
         }
     }, []);
-
-    // =====================================================
-    // ESCUCHAR CAMBIOS DE FOTO DESDE PROFILE
-    // =====================================================
 
     useEffect(() => {
         const handleProfileImageUpdated = (
@@ -113,10 +111,6 @@ const MainLayout = () => {
             );
         };
     }, []);
-
-    // =====================================================
-    // DATOS USUARIO
-    // =====================================================
 
     const getUserName = () => {
         if (!user) return "Usuario";
@@ -155,10 +149,6 @@ const MainLayout = () => {
         )
         .join("");
 
-    // =====================================================
-    // FOTO DE PERFIL DESDE SIDEBAR
-    // =====================================================
-
     const handleProfileImage = (
         event: React.ChangeEvent<HTMLInputElement>
     ) => {
@@ -184,8 +174,6 @@ const MainLayout = () => {
                 result
             );
 
-            // Avisar también a cualquier componente
-            // que esté escuchando cambios de foto
             window.dispatchEvent(
                 new CustomEvent(
                     "worklyProfileImageUpdated",
@@ -198,22 +186,12 @@ const MainLayout = () => {
 
         reader.readAsDataURL(file);
 
-        // Permitir volver a seleccionar
-        // la misma imagen
         event.target.value = "";
     };
-
-    // =====================================================
-    // ABRIR PERFIL
-    // =====================================================
 
     const openProfile = () => {
         navigate("/profile");
     };
-
-    // =====================================================
-    // LOGOUT
-    // =====================================================
 
     const logout = () => {
         localStorage.removeItem("worklyUser");
@@ -223,24 +201,14 @@ const MainLayout = () => {
         });
     };
 
-    // =====================================================
-    // CERRAR SIDEBAR AL CAMBIAR DE PÁGINA
-    // =====================================================
-
     useEffect(() => {
         setSidebarOpen(false);
     }, [location.pathname]);
 
-    // =====================================================
-    // RENDER
-    // =====================================================
-
     return (
         <div className="h-screen overflow-hidden bg-[#eef2f7] text-slate-800">
 
-            {/* =====================================================
-                BOTÓN MENÚ MOBILE
-            ====================================================== */}
+            {/* BOTÓN MENÚ MOBILE */}
 
             <button
                 type="button"
@@ -252,9 +220,7 @@ const MainLayout = () => {
                 <Menu size={20} />
             </button>
 
-            {/* =====================================================
-                OVERLAY MOBILE
-            ====================================================== */}
+            {/* OVERLAY MOBILE */}
 
             {sidebarOpen && (
                 <div
@@ -265,9 +231,7 @@ const MainLayout = () => {
                 />
             )}
 
-            {/* =====================================================
-                SIDEBAR
-            ====================================================== */}
+            {/* SIDEBAR */}
 
             <aside
                 className={`
@@ -285,9 +249,7 @@ const MainLayout = () => {
                 `}
             >
 
-                {/* =================================================
-                    LOGO
-                ================================================== */}
+                {/* LOGO */}
 
                 <div className="flex h-[76px] items-center justify-between border-b border-white/[0.06] px-5">
 
@@ -317,8 +279,6 @@ const MainLayout = () => {
 
                     </div>
 
-                    {/* Cerrar sidebar */}
-
                     <button
                         type="button"
                         onClick={() =>
@@ -331,9 +291,7 @@ const MainLayout = () => {
 
                 </div>
 
-                {/* =================================================
-                    NAVEGACIÓN
-                ================================================== */}
+                {/* NAVEGACIÓN */}
 
                 <nav className="flex-1 overflow-y-auto px-3 py-6">
 
@@ -400,15 +358,11 @@ const MainLayout = () => {
 
                 </nav>
 
-                {/* =================================================
-                    USUARIO
-                ================================================== */}
+                {/* USUARIO */}
 
                 <div className="border-t border-white/[0.06] p-3">
 
-                    {/* =================================================
-                        TARJETA PERFIL
-                    ================================================== */}
+                    {/* TARJETA PERFIL */}
 
                     <div
                         onClick={openProfile}
@@ -517,9 +471,7 @@ const MainLayout = () => {
 
                     </div>
 
-                    {/* =================================================
-                        INPUT FOTO
-                    ================================================== */}
+                    {/* INPUT FOTO */}
 
                     <input
                         ref={fileInputRef}
@@ -531,9 +483,7 @@ const MainLayout = () => {
                         }
                     />
 
-                    {/* =================================================
-                        CERRAR SESIÓN
-                    ================================================== */}
+                    {/* CERRAR SESIÓN */}
 
                     <button
                         onClick={logout}
@@ -560,9 +510,7 @@ const MainLayout = () => {
 
             </aside>
 
-            {/* =====================================================
-                CONTENIDO
-            ====================================================== */}
+            {/* CONTENIDO */}
 
             <main
                 className="
