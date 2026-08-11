@@ -29,8 +29,8 @@ public class RecordsController : ControllerBase
     {
         record.Id = Guid.NewGuid();
 
-        record.CreatedAt = DateTime.Now;
-        record.UpdatedAt = DateTime.Now;
+        record.CreatedAt = DateTime.UtcNow;
+        record.UpdatedAt = DateTime.UtcNow;
 
         // Si no se envía un estado, se crea como Pendiente
         if (string.IsNullOrWhiteSpace(record.Status))
@@ -65,7 +65,7 @@ public class RecordsController : ControllerBase
             ? "Pendiente"
             : record.Status;
 
-        existing.UpdatedAt = DateTime.Now;
+        existing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
@@ -81,7 +81,7 @@ public class RecordsController : ControllerBase
             return NotFound();
 
         record.Favorite = !record.Favorite;
-        record.UpdatedAt = DateTime.Now;
+        record.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
