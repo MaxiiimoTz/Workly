@@ -46,4 +46,12 @@ app.MapGet("/health", () => Results.Ok(new
     status = "ok"
 }));
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider
+        .GetRequiredService<WorklyDbContext>();
+
+    db.Database.Migrate();
+}
+
 app.Run();

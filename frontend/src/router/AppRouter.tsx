@@ -17,6 +17,7 @@ import CredentialsPage from "../pages/Credentials/CredentialsPage";
 import FavoritesPage from "../pages/Favorites/FavoritesPage";
 import ProfilePage from "../pages/Profile/ProfilePage";
 import ActivitiesPage from "../pages/Activities/ActivitiesPage";
+import MeetingsPage from "../pages/Meetings/MeetingsPage";
 
 const AppRouter = () => {
     return (
@@ -63,6 +64,11 @@ const AppRouter = () => {
                         <Route
                             path="/activities"
                             element={<ActivitiesPage />}
+                        />
+
+                        <Route
+                            path="/meetings"
+                            element={<MeetingsPage />}
                         />
 
                         <Route

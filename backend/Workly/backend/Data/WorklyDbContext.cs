@@ -5,17 +5,24 @@ namespace backend.Data;
 
 public class WorklyDbContext : DbContext
 {
-    public WorklyDbContext(DbContextOptions<WorklyDbContext> options)
+    public WorklyDbContext(
+        DbContextOptions<WorklyDbContext> options)
         : base(options)
     {
     }
 
     public DbSet<Record> Records => Set<Record>();
+
     public DbSet<Credential> Credentials => Set<Credential>();
+
     public DbSet<User> Users => Set<User>();
+
     public DbSet<Activity> Activities => Set<Activity>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    public DbSet<Meeting> Meetings => Set<Meeting>();
+
+    protected override void OnModelCreating(
+        ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
@@ -39,5 +46,20 @@ public class WorklyDbContext : DbContext
             .WithMany(a => a.Children)
             .HasForeignKey(a => a.ParentId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Meeting>()
+            .HasKey(m => m.Id);
+
+        modelBuilder.Entity<Meeting>()
+            .Property(m => m.Title)
+            .IsRequired();
+
+        modelBuilder.Entity<Meeting>()
+            .Property(m => m.Notes)
+            .HasDefaultValue("");
+
+        modelBuilder.Entity<Meeting>()
+            .Property(m => m.Status)
+            .HasDefaultValue("Pendiente");
     }
 }
