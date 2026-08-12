@@ -17,6 +17,7 @@ import {
     Menu,
     X,
     ClipboardList,
+    CalendarDays,
 } from "lucide-react";
 
 const MainLayout = () => {
@@ -54,6 +55,11 @@ const MainLayout = () => {
             path: "/activities",
             label: "Actividades",
             icon: ClipboardList,
+        },
+        {
+            path: "/meetings",
+            label: "Reuniones",
+            icon: CalendarDays,
         },
         {
             path: "/favorites",
