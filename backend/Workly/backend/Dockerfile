@@ -20,8 +20,6 @@ COPY --from=build /app/publish .
 
 COPY --from=build /src/Migrations ./Migrations
 
-ENV ASPNETCORE_URLS=http://0.0.0.0:10000
-
 EXPOSE 10000
 
 ENTRYPOINT ["sh", "-c", "dotnet ef database update && dotnet backend.dll"]
